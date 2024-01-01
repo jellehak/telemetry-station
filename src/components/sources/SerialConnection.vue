@@ -39,6 +39,7 @@ if (props.autoconnect) {
 
 function autoConnectToFirstPort() {
     navigator.serial.getPorts().then((ports) => {
+        console.log('autoConnectToFirstPort')
         if (ports.length === 0) {
             console.warn('No serial ports found')
             return
