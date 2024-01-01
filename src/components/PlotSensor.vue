@@ -38,7 +38,7 @@ a-card {
     display: block;
     width: 50px;
     height: 50px;
-    background: rgba(0, 128, 0, 0.186);
+    /* background: rgba(0, 128, 0, 0.186); */
 }
 
 .blink_me {
