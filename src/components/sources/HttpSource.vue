@@ -1,20 +1,20 @@
 <template>
-           HTTP
-                <label>
-                    url
-                    {{ form }}
-                    <input type='text' v-model="form.url" />
-                </label>
+    HTTP
+    <label>
+        url
+        {{ form }}
+        <input type='text' v-model="form.url" />
+    </label>
 </template>
 
 <script setup>
-import {reactive} from 'vue'
+import { reactive } from 'vue'
 
 const emit = defineEmits()
 
 const form = reactive({
     url: 'http://192.168.4.1/data.json',
-    interval: 100
+    interval: 3000
 })
 
 setInterval(async () => {

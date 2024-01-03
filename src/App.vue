@@ -1,6 +1,5 @@
-
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 const code = `function(sample) {
     return sample;
@@ -30,7 +29,7 @@ class Sensor {
 
     setValue(value) {
         this.history.push({
-            createdAt: Date.now(),
+            createdAt: new Date(), // Date.now(),
             value
         })
         if (this.history.length > this.limit) {
@@ -42,14 +41,28 @@ class Sensor {
 /** @todo sync with localStorage */
 const form = reactive({
     code,
-    source: 'http',
-    sourceType: 'json',
-    favorites: [],
-    favoritesLog: [],
+    source: 'test',
+    sourceType: 'csv',
+    // sensors: {},
+})
+const state = reactive({
     sensors: {},
 })
-const sensorLookup = ref(form.sensors)
+
+const sensorLookup = ref(state.sensors)
 window.state = form
+
+watch(() => form.source, (source) => {
+    console.log({ source })
+    // add hash to url
+    window.location.hash = source
+})
+
+watch(form, (source) => {
+    console.log('change')
+    // Reset sensors
+    sensorLookup.value = {}
+})
 
 const ui = reactive({})
 
@@ -100,16 +113,19 @@ function convertCsvToObject(csv) {
     <aside>
         <section>
             <h1>Select source</h1>
-            <p>Current source: {{ form.source }}</p>
+            <!-- <p>Current source: {{ form.source }}</p> -->
             <div>
-                {{ form.source }}
-                <v-select :items="[{ value: 'serial' }, { value: 'http' }, { value: 'test' }]" v-model="form.source" />
+                <label>
+                    source
+                    <v-select :items="[{ value: 'serial' }, { value: 'http' }, { value: 'RandomSource' }, { value: 'RandomJsonSource' }]" v-model="form.source" />
+                </label>
                 <!-- <button @click="form.source = 'serial'">Serial</button>
                 <button @click="form.source = 'test'">Test</button> -->
             </div>
     
             <section>
-                <RandomSource v-if="form.source === 'test'" @data="onData" />
+                <RandomSource v-if="form.source === 'RandomSource'" @data="onData" />
+                <RandomJsonSource v-if="form.source === 'RandomJsonSource'" @data="onData" />
                 <div v-if="form.source === 'serial'">
                     <SerialConnection v-model:connected="connected" autoconnect @error="onError" @data="onData" />
                 </div>
@@ -133,36 +149,100 @@ function convertCsvToObject(csv) {
             <h2>Statistics</h2>
             {{ count }} messages received
         </section>
+
+        <section>
+            <h2>Raw</h2>
+            <pre>{{ lastMessageIn }}</pre>
+            <!-- <CodeEditor :modelValue="lastMessageIn" mode="json" /> -->
+        </section>
     </aside>
     
     <main>
         <section>
-            <h2>Values</h2>
+            <h2>Sensors ({{ Object.entries(sensorLookup).length }})</h2>
             <!-- <PlotValues @click="onSensorClick" :values="lastMessageInParsed" /> -->
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                <template v-for="(sensor, key) in form.sensors" :key="key">
+                <template v-for="(sensor, key) in sensorLookup" :key="key">
                     <button @click.stop="sensor.favorite = !sensor.favorite">
                         <PlotSensor :data="{ value: sensor.lastSample.value, key: sensor.key }"></PlotSensor>
+                        <Graph :values="sensor.history" style="height: 50px"/>
                         <div v-if="sensor.favorite">
-                            <Graph :values="sensor.history" />
+                            <!-- {{ sensor.history }} -->
+                            <Table :items="sensor.history" :columns="['value','createdAt']"/>
                         </div>
                     </button>
                 </template>
             </div>
         </section>
     
-        <section>
-            <h2>Raw</h2>
-            <!-- <pre>{{ sensorLookup }}</pre> -->
-            <CodeEditor :modelValue="lastMessageIn" mode="json" />
-        </section>
+       
     </main>
 </template>
 
 <style>
-aside {
+/* @import url("https://cdn.jsdelivr.net/gh/yegor256/tacit@gh-pages/tacit-css-1.6.0.min.css"); */
+/* @import url("https://unpkg.com/mvp.css"); */
+
+/* aside {
   width: 40%;
   padding-left: 0.5rem;
   margin-left: 0.5rem;
+} */
+
+/* default, light mode styling */
+body {
+  --background-color: #1f1f1f;
+  --text-color: #ebebeb;
+  --title-background-color: #111;
+  --title-text-color: #ebebeb;
+  --widget-color: #424242;
+  --hover-color: #4f4f4f;
+  --focus-color: #595959;
+  --number-color: #2cc9ff;
+  --string-color: #a2db3c;
+  --font-size: 11px;
+  --input-font-size: 11px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+    sans-serif;
+  --font-family-mono: Menlo, Monaco, Consolas, "Droid Sans Mono", monospace;
+  --padding: 4px;
+  --spacing: 4px;
+  --widget-height: 20px;
+  --title-height: calc(var(--widget-height) + var(--spacing) * 1.25);
+  --name-width: 45%;
+  --slider-knob-width: 2px;
+  --slider-input-width: 27%;
+  --color-input-width: 27%;
+  --slider-input-min-width: 45px;
+  --color-input-min-width: 45px;
+  --folder-indent: 7px;
+  --widget-padding: 0 0 0 3px;
+  --widget-border-radius: 2px;
+  --checkbox-size: calc(var(--widget-height) * 0.75);
+  --scrollbar-width: 5px;
+  color: var(--text-color);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  text-align: left;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background-color: #fff;
+  color: #000;
+}
+
+/* if user switches the system settings to dark mode */
+/* this media query will be applied */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #000;
+    color: #fff;
+  }
 }
 </style>
