@@ -2,7 +2,7 @@
 // Components are registered using the filename.
 
 // https://vitejs.dev/guide/features.html#glob-import
-const modules = import.meta.globEager('./**/*.vue')
+const modules = import.meta.glob('./**/*.vue',{eager:true})
 
 // console.log(modules)
 function pathToFileName (fileName) {

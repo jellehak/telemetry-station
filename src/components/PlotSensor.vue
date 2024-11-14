@@ -1,12 +1,12 @@
 <template>
     <a-card :class="isChanged && 'blink_me'">
-        <small>{{ data.key }}</small>
-
-        <div>
+        <div class="PlotSensor__Key">{{ data.key }}</div>
+        <ValueStream :value="Number(data.value)"/>
+        <!-- <div>
             <b>
                 {{ data.value }}
             </b>
-        </div>
+        </div> -->
         <!-- add units? -->
     </a-card>
 </template>

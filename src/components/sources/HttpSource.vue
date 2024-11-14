@@ -5,10 +5,15 @@
         {{ form }}
         <input type='text' v-model="form.url" />
     </label>
+    <label>
+        Interval
+        <input type='number' v-model="form.interval" />ms
+    </label>
+    {{ form }}
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const emit = defineEmits()
 
@@ -17,15 +22,21 @@ const form = reactive({
     interval: 3000
 })
 
-setInterval(async () => {
-    const resp = await fetch(form.url)
-    // console.log(resp)
-    const data = await resp.text()
-    // console.log(data)
+let intervalId
 
-    // const raw = JSON.stringify({
-    //     key: 'value'
-    // })
+const fetchData = async () => {
+    const resp = await fetch(form.url)
+    const data = await resp.text()
     emit('data', data)
-}, form.interval)
+}
+
+const setupInterval = () => {
+    if (intervalId) clearInterval(intervalId)
+    intervalId = setInterval(fetchData, form.interval)
+}
+
+watch(() => form.interval, setupInterval)
+
+onMounted(setupInterval)
+onBeforeUnmount(() => clearInterval(intervalId))
 </script>

@@ -17,7 +17,7 @@ class Sensor {
     log = false
     history = []
 
-    limit = 20
+    limit = 40
 
     constructor(key) {
         this.key = key
@@ -41,6 +41,8 @@ class Sensor {
 /** @todo sync with localStorage */
 const form = reactive({
     code,
+    showGraph: true,
+    sensorHistoryLimit: 20,
     source: 'test',
     sourceType: 'csv',
     // sensors: {},
@@ -88,9 +90,11 @@ function onData(rawMessage = '') {
     // Update sensors
     const _lastMessageIn = lastMessageInParsed.value
     for (const key in _lastMessageIn) {
+        // No sensor yet? create new Sensor
         if (!sensorLookup.value[key]) {
             sensorLookup.value[key] = reactive(new Sensor(key))
         }
+        // Set sensor value
         sensorLookup.value[key].setValue(_lastMessageIn[key])
     }
 }
@@ -110,19 +114,26 @@ function convertCsvToObject(csv) {
 </script>
 
 <template>
-    <aside>
+    <Panel open>
+        <template #title>Settings</template>
         <section>
-            <h1>Select source</h1>
             <!-- <p>Current source: {{ form.source }}</p> -->
             <div>
                 <label>
                     source
-                    <v-select :items="[{ value: 'serial' }, { value: 'http' }, { value: 'RandomSource' }, { value: 'RandomJsonSource' }]" v-model="form.source" />
+                    <v-select
+                        :items="[{ value: 'serial' }, { value: 'http' }, { value: 'RandomSource' }, { value: 'RandomJsonSource' }]"
+                        v-model="form.source" />
                 </label>
                 <!-- <button @click="form.source = 'serial'">Serial</button>
                 <button @click="form.source = 'test'">Test</button> -->
             </div>
-    
+
+            <label>
+                Show graph
+                <input v-model="form.showGraph" type="checkbox"/>
+            </label>
+
             <section>
                 <RandomSource v-if="form.source === 'RandomSource'" @data="onData" />
                 <RandomJsonSource v-if="form.source === 'RandomJsonSource'" @data="onData" />
@@ -133,50 +144,60 @@ function convertCsvToObject(csv) {
                     <HttpSource @data="onData" />
                 </div>
             </section>
-    
+
             <section>
                 <h2>Processing</h2>
-                <v-select :items="[{ value: 'csv' }, { value: 'json' }, { value: 'custom' }]" v-model="form.sourceType" />
+                <v-select :items="[{ value: 'csv' }, { value: 'json' }, { value: 'custom' }]"
+                    v-model="form.sourceType" />
                 <!-- <CodeEditor v-model="form.code"/> -->
             </section>
         </section>
-    
+
         <!-- <Graph :values="form.favoritesLog" /> -->
         <!-- {{ form.favoritesLog.map(e=>e.value) }} -->
         <!-- {{ form.favoritesLog }} -->
-    
+    </Panel>
+
+    <Panel>
+        <template #title>Statistics</template>
         <section>
-            <h2>Statistics</h2>
             {{ count }} messages received
         </section>
+    </Panel>
 
+    <Panel>
+        <template #title>Raw</template>
         <section>
-            <h2>Raw</h2>
-            <pre>{{ lastMessageIn }}</pre>
+            <textarea style="width: 100%; height: 100px;">{{ lastMessageIn }}</textarea>
             <!-- <CodeEditor :modelValue="lastMessageIn" mode="json" /> -->
         </section>
-    </aside>
-    
-    <main>
+    </Panel>
+
+    <Panel open>
+        <template #title>Sensors ({{ Object.entries(sensorLookup).length }})</template>
+
         <section>
-            <h2>Sensors ({{ Object.entries(sensorLookup).length }})</h2>
             <!-- <PlotValues @click="onSensorClick" :values="lastMessageInParsed" /> -->
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                 <template v-for="(sensor, key) in sensorLookup" :key="key">
-                    <button @click.stop="sensor.favorite = !sensor.favorite">
+                    <!-- <div @click.stop="sensor.favorite = !sensor.favorite">
                         <PlotSensor :data="{ value: sensor.lastSample.value, key: sensor.key }"></PlotSensor>
-                        <Graph :values="sensor.history" style="height: 50px"/>
+                        <Graph v-if="form.showGraph" :values="sensor.history" style="height: 50px" />
                         <div v-if="sensor.favorite">
-                            <!-- {{ sensor.history }} -->
-                            <Table :items="sensor.history" :columns="['value','createdAt']"/>
+                            <Table :items="sensor.history" :columns="['value', 'createdAt']" >
+                                <template #item.createdAt="{ item }">
+                                    {{ new Date(item.createdAt).toLocaleTimeString() }}
+                                </template> 
+                            </Table>
                         </div>
-                    </button>
+                    </div> -->
+                    <SensorView :sensor="sensor" :form="form" />
                 </template>
             </div>
         </section>
-    
-       
-    </main>
+
+
+    </Panel>
 </template>
 
 <style>
@@ -191,58 +212,66 @@ function convertCsvToObject(csv) {
 
 /* default, light mode styling */
 body {
-  --background-color: #1f1f1f;
-  --text-color: #ebebeb;
-  --title-background-color: #111;
-  --title-text-color: #ebebeb;
-  --widget-color: #424242;
-  --hover-color: #4f4f4f;
-  --focus-color: #595959;
-  --number-color: #2cc9ff;
-  --string-color: #a2db3c;
-  --font-size: 11px;
-  --input-font-size: 11px;
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
-    sans-serif;
-  --font-family-mono: Menlo, Monaco, Consolas, "Droid Sans Mono", monospace;
-  --padding: 4px;
-  --spacing: 4px;
-  --widget-height: 20px;
-  --title-height: calc(var(--widget-height) + var(--spacing) * 1.25);
-  --name-width: 45%;
-  --slider-knob-width: 2px;
-  --slider-input-width: 27%;
-  --color-input-width: 27%;
-  --slider-input-min-width: 45px;
-  --color-input-min-width: 45px;
-  --folder-indent: 7px;
-  --widget-padding: 0 0 0 3px;
-  --widget-border-radius: 2px;
-  --checkbox-size: calc(var(--widget-height) * 0.75);
-  --scrollbar-width: 5px;
-  color: var(--text-color);
-  font-family: var(--font-family);
-  font-size: var(--font-size);
-  font-style: normal;
-  font-weight: 400;
-  line-height: 1;
-  text-align: left;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
+    --background-color: #1f1f1f;
+    --text-color: #ebebeb;
+    --title-background-color: #111;
+    --title-text-color: #ebebeb;
+    --widget-color: #424242;
+    --hover-color: #4f4f4f;
+    --focus-color: #595959;
+    --number-color: #2cc9ff;
+    --string-color: #a2db3c;
+    --font-size: 11px;
+    --input-font-size: 11px;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+        sans-serif;
+    --font-family-mono: Menlo, Monaco, Consolas, "Droid Sans Mono", monospace;
+    --padding: 4px;
+    --spacing: 4px;
+    --widget-height: 20px;
+    --title-height: calc(var(--widget-height) + var(--spacing) * 1.25);
+    --name-width: 45%;
+    --slider-knob-width: 2px;
+    --slider-input-width: 27%;
+    --color-input-width: 27%;
+    --slider-input-min-width: 45px;
+    --color-input-min-width: 45px;
+    --folder-indent: 7px;
+    --widget-padding: 0 0 0 3px;
+    --widget-border-radius: 2px;
+    --checkbox-size: calc(var(--widget-height) * 0.75);
+    --scrollbar-width: 5px;
+    color: var(--text-color);
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1;
+    text-align: left;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 body {
-  background-color: #fff;
-  color: #000;
+    background-color: #fff;
+    color: #000;
 }
 
 /* if user switches the system settings to dark mode */
 /* this media query will be applied */
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #000;
-    color: #fff;
-  }
+    body {
+        background-color: #000;
+        color: #fff;
+    }
+}
+
+aside {
+    background-color: var(--widget-color);
+    color: var(--text-color);
+    padding: var(--padding);
+    margin: var(--spacing);
+    border-radius: var(--widget-border-radius);
 }
 </style>

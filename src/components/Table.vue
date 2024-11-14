@@ -7,7 +7,11 @@
         </thead>
         <tbody>
             <tr v-for="item in items" :key="item.id">
-                <td v-for="column in columns" :key="column.field">{{ item[column.field || column] }}</td>
+                <td v-for="column in columns" :key="column.field">
+                    <slot :name="`item.${column}`" v-bind="{ item }">
+                        {{ item[column || column] }}
+                    </slot>
+                </td>
             </tr>
         </tbody>
     </table>
