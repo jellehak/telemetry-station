@@ -28,9 +28,9 @@ export default defineConfig({
         description: "Simple monitoring over serial or HTTP.",
         icons: [
           {
-            src: './pwa-192.jpg',
-            sizes: '192x192',
-            type: 'image/jpg',
+            src: './pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
             "purpose": "any"
           }
         ],
